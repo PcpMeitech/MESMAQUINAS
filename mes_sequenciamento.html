@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MES · Sequenciamento de Producao</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;background:#080c12}
+body{font-family:'Barlow',sans-serif;color:#c9d1d9;overflow-x:hidden}
+:root{
+  --bg0:#080c12;--bg1:#0d1117;--bg2:#111827;--bg3:#1a2234;
+  --border:#1e2a3a;--border2:#2a3a55;
+  --amber:#f59e0b;--amber2:#fbbf24;--amberBg:rgba(245,158,11,0.08);--amberBorder:rgba(245,158,11,0.2);
+  --blue:#60a5fa;--blueBg:rgba(96,165,250,0.08);--blueBorder:rgba(96,165,250,0.2);
+  --green:#34d399;--greenBg:rgba(52,211,153,0.08);--greenBorder:rgba(52,211,153,0.2);
+  --red:#ef4444;--redBg:rgba(239,68,68,0.1);--redBorder:rgba(239,68,68,0.25);
+  --orange:#f97316;--yellow:#eab308;
+  --t1:#f1f5f9;--t2:#c9d1d9;--t3:#8b949e;--t4:#4b5563;--t5:#2a3a55;
+}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.app{min-height:100vh;background:var(--bg0)}
+.header{background:var(--bg1);border-bottom:1px solid var(--border);height:56px;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:1rem;color:var(--amber);display:flex;align-items:center;gap:.6rem;letter-spacing:.05em}
+.logo-dot{width:7px;height:7px;background:var(--amber);border-radius:50%;animation:blink 2.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(245,158,11,.5)}60%{opacity:.7;box-shadow:0 0 0 5px rgba(245,158,11,0)}}
+.hstats{display:flex;gap:1.25rem;font-size:.72rem;font-family:'IBM Plex Mono',monospace;color:var(--t4)}
+.hstats span b{color:var(--amber);font-weight:600}
+.nav{background:var(--bg1);border-bottom:1px solid var(--border);display:flex;padding:0 1.5rem;gap:0;overflow-x:auto}
+.nav-btn{padding:.75rem 1.25rem;background:none;border:none;border-bottom:2px solid transparent;color:var(--t3);font-family:'Barlow',sans-serif;font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:.5rem;transition:color .18s,border-color .18s}
+.nav-btn:hover{color:var(--t2);background:rgba(255,255,255,.02)}
+.nav-btn.active{color:var(--amber);border-bottom-color:var(--amber)}
+.nav-btn-rep{color:var(--amber)!important;margin-left:auto;border:1px solid var(--amberBorder);border-bottom:2px solid transparent;border-radius:0}
+.nav-btn-rep:hover{background:var(--amberBg)!important}
+.nbadge{background:var(--amberBg);color:var(--amber);font-size:.62rem;padding:.1rem .4rem;border-radius:10px;font-family:'IBM Plex Mono',monospace}
+.content{padding:1.75rem;max-width:1360px;margin:0 auto}
+.sec-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
+.sec-title{font-size:1.15rem;font-weight:700;color:var(--t1);letter-spacing:.02em}
+.sec-sub{font-size:.75rem;color:var(--t4);margin-top:.2rem;font-family:'IBM Plex Mono',monospace}
+.btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:6px;font-family:'Barlow',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;border:none;transition:all .18s;letter-spacing:.02em;white-space:nowrap}
+.btn-primary{background:var(--amber);color:#000}.btn-primary:hover{background:var(--amber2);transform:translateY(-1px)}
+.btn-secondary{background:rgba(255,255,255,.05);color:var(--t2);border:1px solid var(--border2)}.btn-secondary:hover{background:rgba(255,255,255,.09)}
+.btn-danger{background:var(--redBg);color:var(--red);border:1px solid var(--redBorder);padding:.3rem .7rem;font-size:.75rem}.btn-danger:hover{background:rgba(239,68,68,.18)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.tbl-wrap{background:var(--bg1);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--bg2);border-bottom:1px solid var(--border)}
+th{padding:.65rem 1rem;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);font-family:'IBM Plex Mono',monospace}
+td{padding:.8rem 1rem;font-size:.85rem;border-bottom:1px solid rgba(30,42,58,.6);vertical-align:middle;color:var(--t2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.012)}
+.mono{font-family:'IBM Plex Mono',monospace}
+.empty-state{padding:3.5rem 2rem;text-align:center;color:var(--t5)}
+.empty-text{font-size:.85rem;color:var(--t4)}
+.empty-hint{font-size:.75rem;color:var(--t5);margin-top:.4rem}
+.chip{display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .55rem;border-radius:4px;font-size:.7rem;font-family:'IBM Plex Mono',monospace;font-weight:500}
+.chip-amber{background:var(--amberBg);color:var(--amber);border:1px solid var(--amberBorder)}
+.chip-blue{background:var(--blueBg);color:var(--blue);border:1px solid var(--blueBorder)}
+.chip-green{background:var(--greenBg);color:var(--green);border:1px solid var(--greenBorder)}
+.chip-gray{background:rgba(107,114,128,.08);color:var(--t3);border:1px solid rgba(107,114,128,.2)}
+.chip-red{background:var(--redBg);color:var(--red);border:1px solid var(--redBorder)}
+.chip-orange{background:rgba(249,115,22,.08);color:var(--orange);border:1px solid rgba(249,115,22,.2)}
+.chip-yellow{background:rgba(234,179,8,.08);color:var(--yellow);border:1px solid rgba(234,179,8,.2)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;animation:fadeIn .15s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.modal{background:var(--bg1);border:1px solid var(--border);border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:slideUp .2s ease;display:flex;flex-direction:column}
+.modal-xl{max-width:860px}
+.modal-head{padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg1);z-index:10;gap:.75rem}
+.modal-title{font-size:.95rem;font-weight:700;color:var(--t1)}
+.modal-actions{display:flex;align-items:center;gap:.5rem}
+.close-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--t3);width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:all .18s}
+.close-btn:hover{background:var(--redBg);color:var(--red);border-color:var(--redBorder)}
+.modal-body{padding:1.4rem;flex:1}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.f-full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:.35rem}
+label{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t4);font-family:'IBM Plex Mono',monospace}
+input,select,textarea{background:var(--bg2);border:1px solid var(--border);color:var(--t2);padding:.55rem .8rem;border-radius:6px;font-family:'Barlow',sans-serif;font-size:.85rem;transition:border-color .18s,box-shadow .18s;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,158,11,.09)}
+input::placeholder,textarea::placeholder{color:var(--t5)}
+select option{background:var(--bg2);color:var(--t2)}
+textarea{resize:vertical;min-height:70px}
+.form-divider{border:none;border-top:1px solid var(--border);margin:1.25rem 0}
+.fsec{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:.85rem}
+.step-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:.65rem;position:relative}
+.step-num{position:absolute;top:-9px;left:14px;background:var(--amber);color:#000;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.65rem;padding:.12rem .45rem;border-radius:4px}
+.check-group{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.2rem}
+.check-item{display:flex;align-items:center;gap:.4rem;background:var(--bg1);border:1px solid var(--border);padding:.28rem .65rem;border-radius:6px;cursor:pointer;font-size:.78rem;transition:all .15s;user-select:none}
+.check-item:hover{border-color:var(--border2)}
+.check-item.checked{border-color:var(--amber);background:var(--amberBg);color:var(--amber)}
+.check-item input[type=checkbox]{width:13px;height:13px;accent-color:var(--amber);margin:0;padding:0;border:none;cursor:pointer;flex-shrink:0}
+.trow{display:flex;align-items:center;gap:.7rem;padding:.4rem 0}
+.toggle{width:38px;height:20px;background:var(--border2);border-radius:10px;position:relative;cursor:pointer;border:none;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--amber)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.toggle.on::after{transform:translateX(18px)}
+.tlabel{font-size:.85rem;color:var(--t2)}
+.order-card{background:var(--bg1);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;display:grid;grid-template-columns:44px 1fr auto;gap:1rem;align-items:start}
+.order-card:hover{border-color:var(--border2)}
+.orank{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:1.1rem;flex-shrink:0}
+.ocode{font-family:'IBM Plex Mono',monospace;font-size:.95rem;font-weight:600;color:var(--t1);margin-bottom:.18rem}
+.ometa{font-size:.78rem;color:var(--t4);margin-bottom:.6rem}
+.osteps{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.ostep{display:flex;align-items:center;gap:.25rem;font-size:.7rem;color:var(--t3);background:var(--bg2);border:1px solid var(--border);padding:.18rem .55rem;border-radius:4px;font-family:'IBM Plex Mono',monospace}
+.oarrow{color:var(--t5);font-size:.7rem}
+.otags{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem}
+.due-section{text-align:right;min-width:90px;flex-shrink:0}
+.due-label{font-size:.65rem;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;font-family:'IBM Plex Mono',monospace}
+.due-val{font-family:'IBM Plex Mono',monospace;font-size:.88rem;font-weight:600;color:var(--t1);margin-top:.18rem}
+.due-days{font-size:.72rem;margin-top:.18rem}
+.due-acts{margin-top:.65rem;display:flex;gap:.35rem;justify-content:flex-end}
+.info-block{background:rgba(245,158,11,.04);border:1px solid var(--amberBorder);border-radius:8px;padding:.9rem 1rem;margin:.75rem 0}
+.ibtitle{font-size:.65rem;font-family:'IBM Plex Mono',monospace;color:var(--amber);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.65rem}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:.18rem 0;font-size:.78rem}
+.ikey{color:var(--t4)}.ival{color:var(--t2);font-family:'IBM Plex Mono',monospace;font-size:.75rem}
+.alert{background:rgba(245,158,11,.06);border:1px solid var(--amberBorder);border-radius:7px;padding:.7rem 1rem;font-size:.8rem;color:var(--t3);margin-bottom:.75rem}
+.vtoggle{display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:3px;gap:2px}
+.vt-btn{padding:.35rem .9rem;border:none;border-radius:5px;font-family:'Barlow',sans-serif;font-weight:600;font-size:.75rem;cursor:pointer;color:var(--t4);background:none;transition:all .18s;white-space:nowrap}
+.vt-btn.active{background:var(--amber);color:#000}
+.vt-btn:not(.active):hover{color:var(--t2);background:rgba(255,255,255,.05)}
+.maq-board{display:grid;grid-auto-columns:300px;grid-auto-flow:column;gap:.85rem;overflow-x:auto;padding-bottom:.75rem}
+.maq-board::-webkit-scrollbar{height:6px}
+.maq-col{background:var(--bg1);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;max-height:calc(100vh - 230px);min-height:180px;overflow:hidden}
+.maq-head{padding:.85rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.maq-name{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.82rem;color:var(--t1)}
+.maq-cnt{background:var(--bg2);color:var(--t3);font-family:'IBM Plex Mono',monospace;font-size:.65rem;padding:.12rem .45rem;border-radius:5px;border:1px solid var(--border)}
+.maq-list{overflow-y:auto;flex:1;padding:.5rem}
+.maq-item{background:var(--bg2);border:1px solid var(--border);border-left:3px solid transparent;border-radius:7px;padding:.7rem .85rem;margin-bottom:.45rem;transition:background .15s}
+.maq-item:hover{background:var(--bg3)}
+.maq-item:last-child{margin-bottom:0}
+.maq-pos-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
+.maq-pos{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--t4);background:var(--bg1);border:1px solid var(--border);padding:.1rem .4rem;border-radius:4px}
+.maq-code{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.88rem;color:var(--t1);margin-bottom:.18rem}
+.maq-step{font-size:.75rem;color:var(--amber);margin-bottom:.28rem}
+.maq-meta{font-size:.72rem;color:var(--t4);margin-bottom:.42rem}
+.maq-footer{display:flex;align-items:center;justify-content:space-between;gap:.3rem;flex-wrap:wrap}
+.maq-date{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--t3)}
+.maq-days{font-size:.68rem}
+.maq-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--t5);font-size:.78rem;padding:2rem 1rem;text-align:center}
+@media(max-width:640px){
+  .content{padding:1rem}.fgrid{grid-template-columns:1fr}.f-full{grid-column:1}
+  .modal-xl{max-width:100%}.order-card{grid-template-columns:44px 1fr;gap:.7rem}
+  .due-section{grid-column:1/-1;text-align:left}.hstats{display:none}.header{padding:0 1rem}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- SCRIPT 1: Pure JS utilities + report (NO JSX, NO Babel) -->
+<script>
+var MES_KEY = 'mes_seq_v3';
+
+var MES_IMP = {
+  1: {label:'Critico', color:'#ef4444', bg:'rgba(239,68,68,0.12)', cls:'chip-red'},
+  2: {label:'Alto',    color:'#f97316', bg:'rgba(249,115,22,0.12)', cls:'chip-orange'},
+  3: {label:'Medio',   color:'#eab308', bg:'rgba(234,179,8,0.12)',  cls:'chip-yellow'},
+  4: {label:'Baixo',   color:'#34d399', bg:'rgba(52,211,153,0.12)', cls:'chip-green'}
+};
+
+function mesLoadData() {
+  try { return JSON.parse(localStorage.getItem(MES_KEY)) || mesInitData(); }
+  catch(e) { return mesInitData(); }
+}
+function mesInitData() { return {machines:[], processes:[], codes:[], orders:[]}; }
+function mesSaveData(d) { try { localStorage.setItem(MES_KEY, JSON.stringify(d)); } catch(e) {} }
+function mesUid() { return Math.random().toString(36).slice(2,10); }
+function mesDaysUntil(d) {
+  if(!d) return null;
+  return Math.ceil((new Date(d + 'T12:00:00') - new Date()) / 86400000);
+}
+function mesFmtDate(d) {
+  if(!d) return '--';
+  return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR');
+}
+
+function mesOpenReport(db) {
+  var now = new Date().toLocaleString('pt-BR');
+  var ILC = {1:'#b91c1c', 2:'#c2410c', 3:'#7c6b0a', 4:'#065f46'};
+  var ILL = {1:'CRITICO', 2:'ALTO',    3:'MEDIO',   4:'BAIXO'};
+
+  function sortOrders(a, b) {
+    var ia = parseInt(a.order.importance) || 3;
+    var ib = parseInt(b.order.importance) || 3;
+    if(ia !== ib) return ia - ib;
+    return new Date(a.order.deliveryDate || '9999') - new Date(b.order.deliveryDate || '9999');
+  }
+
+  function getItemsForMachine(machId) {
+    var items = [];
+    for(var i = 0; i < db.orders.length; i++) {
+      var ord = db.orders[i];
+      var cod = null;
+      for(var j = 0; j < db.codes.length; j++) {
+        if(db.codes[j].id === ord.codeId) { cod = db.codes[j]; break; }
+      }
+      if(!cod) continue;
+      var steps = cod.steps || [];
+      for(var k = 0; k < steps.length; k++) {
+        var mids = steps[k].machineIds || [];
+        for(var m = 0; m < mids.length; m++) {
+          if(mids[m] === machId) { items.push({order:ord, code:cod, step:steps[k]}); break; }
+        }
+      }
+    }
+    items.sort(sortOrders);
+    return items;
+  }
+
+  function buildRow(item, pos) {
+    var ord = item.order, cod = item.code, step = item.step;
+    var proc = null;
+    for(var i = 0; i < db.processes.length; i++) {
+      if(db.processes[i].id === step.processId) { proc = db.processes[i]; break; }
+    }
+    var imp = parseInt(ord.importance) || 3;
+    var days = mesDaysUntil(ord.deliveryDate);
+    var dStr = days === null ? '--' : days < 0 ? (Math.abs(days) + 'd ATRASADO') : days === 0 ? 'HOJE' : (days + 'd');
+    var dColor = days === null ? '#6b7280' : days < 0 ? '#b91c1c' : days <= 3 ? '#c2410c' : days <= 7 ? '#7c6b0a' : '#6b7280';
+    return '<tr>'
+      + '<td style="font-family:monospace;font-weight:700;color:#f59e0b;text-align:center;padding:.5rem .6rem">' + pos + '</td>'
+      + '<td style="font-family:monospace;font-weight:700;color:#111;padding:.5rem .6rem">' + cod.code + '</td>'
+      + '<td style="padding:.5rem .6rem">' + (cod.description || '--') + '</td>'
+      + '<td style="padding:.5rem .6rem">' + (ord.quantity || '--') + '</td>'
+      + '<td style="padding:.5rem .6rem">Etapa ' + step.sequence + ' - ' + (proc ? proc.name : '--') + '</td>'
+      + '<td style="color:' + (ILC[imp] || '#555') + ';font-weight:700;padding:.5rem .6rem">' + (ILL[imp] || 'MEDIO') + '</td>'
+      + '<td style="padding:.5rem .6rem">' + (cod.setupTime ? cod.setupTime + 'min' : '--') + '</td>'
+      + '<td style="padding:.5rem .6rem">' + (cod.tool || '--') + '</td>'
+      + '<td style="padding:.5rem .6rem">' + (cod.hasProgram ? (cod.programName || 'Sim') : 'Nao') + '</td>'
+      + '<td style="font-family:monospace;padding:.5rem .6rem">' + (ord.deliveryDate ? new Date(ord.deliveryDate + 'T12:00:00').toLocaleDateString('pt-BR') : '--') + '</td>'
+      + '<td style="color:' + dColor + ';font-weight:700;padding:.5rem .6rem;font-family:monospace">' + dStr + '</td>'
+      + '<td style="padding:.5rem .6rem;color:#555">' + (ord.notes || '--') + '</td>'
+      + '</tr>';
+  }
+
+  var thStyle = 'style="padding:.45rem .6rem;text-align:left;font-size:.62rem;color:#94a3b8;white-space:nowrap;border-right:1px solid #2a3a55"';
+  var theadHtml = '<thead style="background:#1a2234"><tr>'
+    + '<th ' + thStyle + '>#</th><th ' + thStyle + '>Codigo</th><th ' + thStyle + '>Descricao</th>'
+    + '<th ' + thStyle + '>Qtd</th><th ' + thStyle + '>Processo/Etapa</th><th ' + thStyle + '>Import.</th>'
+    + '<th ' + thStyle + '>Setup</th><th ' + thStyle + '>Ferramenta</th><th ' + thStyle + '>Programa</th>'
+    + '<th ' + thStyle + '>Entrega</th><th ' + thStyle + '>Prazo</th><th style="padding:.45rem .6rem;text-align:left;font-size:.62rem;color:#94a3b8">Obs</th>'
+    + '</tr></thead>';
+
+  var machHtml = '';
+  for(var mi = 0; mi < db.machines.length; mi++) {
+    var mac = db.machines[mi];
+    var items = getItemsForMachine(mac.id);
+    var rowsHtml = '';
+    for(var ii = 0; ii < items.length; ii++) {
+      rowsHtml += buildRow(items[ii], ii + 1);
+      if(ii % 2 === 1) rowsHtml = rowsHtml.replace('<tr>', '<tr style="background:#f9fafb">');
+    }
+    machHtml += '<div style="margin-bottom:2rem;page-break-inside:avoid">';
+    machHtml += '<div style="background:#0d1117;padding:.65rem 1rem;border-radius:6px 6px 0 0;display:flex;align-items:center;gap:.75rem">';
+    machHtml += '<span style="font-family:monospace;font-weight:700;font-size:.9rem;color:#f59e0b">' + mac.name + '</span>';
+    if(mac.description) machHtml += '<span style="font-size:.75rem;color:#9ca3af">' + mac.description + '</span>';
+    machHtml += '<span style="margin-left:auto;background:#1a2234;padding:.15rem .5rem;border-radius:4px;font-family:monospace;font-size:.68rem;color:#6b7280">' + items.length + ' ordens</span>';
+    machHtml += '</div>';
+    if(items.length === 0) {
+      machHtml += '<p style="padding:.65rem 1rem;color:#9ca3af;background:#f9fafb;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;font-size:.82rem">Nenhuma ordem atribuida a esta maquina.</p>';
+    } else {
+      machHtml += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-top:none;font-size:.8rem">'
+        + theadHtml + '<tbody>' + rowsHtml + '</tbody></table></div>';
+    }
+    machHtml += '</div>';
+  }
+
+  var criticas = 0, atrasadas = 0, comTrabalho = 0;
+  for(var oi = 0; oi < db.orders.length; oi++) { if(parseInt(db.orders[oi].importance) === 1) criticas++; }
+  for(var oi2 = 0; oi2 < db.orders.length; oi2++) { var dd = mesDaysUntil(db.orders[oi2].deliveryDate); if(dd !== null && dd < 0) atrasadas++; }
+  for(var mii = 0; mii < db.machines.length; mii++) { if(getItemsForMachine(db.machines[mii].id).length > 0) comTrabalho++; }
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'
+    + '<title>Relatorio MES - ' + now + '</title>'
+    + '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;color:#1a1a1a}'
+    + '@media print{.noprint{display:none!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:1.5cm;size:A4 landscape}}'
+    + '</style></head><body>'
+    + '<div class="noprint" style="background:#0d1117;padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="display:flex;gap:.6rem">'
+    + '<button onclick="window.print()" style="background:#f59e0b;color:#000;border:none;padding:.55rem 1.2rem;border-radius:6px;font-weight:700;font-size:.85rem;cursor:pointer">Imprimir / Salvar PDF</button>'
+    + '<button onclick="window.close()" style="background:rgba(255,255,255,.08);color:#9ca3af;border:1px solid #374151;padding:.55rem 1rem;border-radius:6px;font-size:.82rem;cursor:pointer">Fechar</button>'
+    + '</div>'
+    + '<span style="font-size:.72rem;color:#6b7280">Para salvar como PDF: Imprimir &rarr; Destino: Salvar como PDF</span>'
+    + '</div>'
+    + '<div style="background:#0d1117;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-family:monospace;font-weight:700;font-size:1rem;color:#f59e0b">MES SEQ</span>'
+    + '<span style="font-size:1rem;font-weight:700;color:#f1f5f9">Relatorio de Sequenciamento de Producao</span>'
+    + '<div style="text-align:right;font-size:.72rem;color:#9ca3af"><b style="display:block;color:#d1d5db">Emissao</b>' + now + '</div>'
+    + '</div>'
+    + '<div style="background:#f8f9fa;border-bottom:2px solid #e5e7eb;padding:.75rem 1.5rem;display:flex;gap:2rem">'
+    + '<div style="text-align:center"><div style="font-family:monospace;font-size:1.3rem;font-weight:700">' + db.orders.length + '</div><div style="font-size:.65rem;color:#6b7280;text-transform:uppercase">Ordens</div></div>'
+    + '<div style="text-align:center"><div style="font-family:monospace;font-size:1.3rem;font-weight:700">' + db.machines.length + '</div><div style="font-size:.65rem;color:#6b7280;text-transform:uppercase">Maquinas</div></div>'
+    + '<div style="text-align:center"><div style="font-family:monospace;font-size:1.3rem;font-weight:700">' + comTrabalho + '</div><div style="font-size:.65rem;color:#6b7280;text-transform:uppercase">Com trabalho</div></div>'
+    + '<div style="text-align:center"><div style="font-family:monospace;font-size:1.3rem;font-weight:700;color:#b91c1c">' + criticas + '</div><div style="font-size:.65rem;color:#b91c1c;text-transform:uppercase">Criticas</div></div>'
+    + '<div style="text-align:center"><div style="font-family:monospace;font-size:1.3rem;font-weight:700;color:#b91c1c">' + atrasadas + '</div><div style="font-size:.65rem;color:#b91c1c;text-transform:uppercase">Atrasadas</div></div>'
+    + '</div>'
+    + '<div style="padding:1.25rem 1.5rem">' + machHtml + '</div>'
+    + '<div style="margin-top:1rem;padding:.75rem 1.5rem;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;color:#9ca3af;font-size:.68rem;font-family:monospace">'
+    + '<span>MES - Sistema de Sequenciamento de Producao</span><span>Emitido: ' + now + '</span></div>'
+    + '</body></html>';
+
+  var win = window.open('', '_blank');
+  if(win) { win.document.write(html); win.document.close(); }
+  else { alert('Popup bloqueado pelo navegador. Permita popups para este site e tente novamente.'); }
+}
+</script>
+
+<!-- SCRIPT 2: React/JSX components ONLY (Babel processes this) -->
+<script type="text/babel">
+const {useState, useEffect, useMemo} = React;
+
+function Modal({title, onClose, wide, actions, children}) {
+  useEffect(() => {
+    const esc = e => { if(e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [onClose]);
+  return (
+    <div className="overlay" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <div className={wide ? 'modal modal-xl' : 'modal'}>
+        <div className="modal-head">
+          <span className="modal-title">{title}</span>
+          <div className="modal-actions">
+            {actions}
+            <button className="close-btn" onClick={onClose}>&#x2715;</button>
+          </div>
+        </div>
+        <div className="modal-body">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [db, setDb]       = useState(mesLoadData);
+  const [tab, setTab]     = useState('seq');
+  const [modal, setModal] = useState(null);
+  const [seqView, setSeqView] = useState('geral');
+
+  useEffect(() => { mesSaveData(db); }, [db]);
+
+  const upd = (key, fn) => setDb(d => ({...d, [key]: fn(d[key])}));
+
+  // MACHINES
+  const [mf, setMf] = useState({name:'', description:''});
+  const addMachine = () => {
+    if(!mf.name.trim()) return;
+    upd('machines', m => [...m, {id:mesUid(), name:mf.name, description:mf.description}]);
+    setMf({name:'', description:''});
+  };
+
+  // PROCESSES
+  const [pf, setPf] = useState({name:'', description:''});
+  const addProcess = () => {
+    if(!pf.name.trim()) return;
+    upd('processes', p => [...p, {id:mesUid(), name:pf.name, description:pf.description}]);
+    setPf({name:'', description:''});
+  };
+
+  // CODES
+  const emptyCode = () => ({code:'', description:'', setupTime:'', tool:'', hasProgram:false, programName:'', steps:[]});
+  const [cf, setCf] = useState(emptyCode());
+
+  const addStep = () => {
+    setCf(f => ({...f, steps:[...f.steps, {id:mesUid(), sequence:f.steps.length+1, processId:'', machineIds:[], execTime:''}]}));
+  };
+  const updStep = (sid, field, val) => {
+    setCf(f => ({...f, steps: f.steps.map(s => s.id === sid ? {...s, [field]:val} : s)}));
+  };
+  const toggleMac = (sid, mid) => {
+    setCf(f => ({...f, steps: f.steps.map(s => {
+      if(s.id !== sid) return s;
+      const ids = s.machineIds.includes(mid) ? s.machineIds.filter(x => x !== mid) : [...s.machineIds, mid];
+      return {...s, machineIds:ids};
+    })}));
+  };
+  const delStep = sid => {
+    setCf(f => ({...f, steps: f.steps.filter(s => s.id !== sid).map((s,i) => ({...s, sequence:i+1}))}));
+  };
+  const saveCode = () => {
+    if(!cf.code.trim()) return;
+    upd('codes', c => [...c, {id:mesUid(), ...cf}]);
+    setCf(emptyCode());
+    setModal('codes');
+  };
+
+  // ORDERS
+  const emptyOrder = () => ({codeId:'', quantity:'', deliveryDate:'', importance:'3', notes:''});
+  const [of2, setOf2] = useState(emptyOrder());
+  const saveOrder = () => {
+    if(!of2.codeId) return;
+    upd('orders', o => [...o, {id:mesUid(), createdAt:new Date().toISOString(), ...of2}]);
+    setOf2(emptyOrder());
+    setTab('seq');
+    setModal(null);
+  };
+
+  // SEQUENCING
+  const sortFn = (a, b) => {
+    const ia = +a.importance, ib = +b.importance;
+    if(ia !== ib) return ia - ib;
+    return new Date(a.deliveryDate || '9999') - new Date(b.deliveryDate || '9999');
+  };
+
+  const sorted = useMemo(() => [...db.orders].sort(sortFn), [db.orders]);
+
+  const getCode = id => db.codes.find(c => c.id === id);
+  const getProc = id => db.processes.find(p => p.id === id);
+  const getMac  = id => db.machines.find(m => m.id === id);
+  const selCode = of2.codeId ? getCode(of2.codeId) : null;
+
+  const machineQueues = useMemo(() => {
+    return db.machines.map(machine => {
+      const items = [];
+      db.orders.forEach(order => {
+        const code = getCode(order.codeId);
+        if(!code) return;
+        (code.steps || []).forEach(step => {
+          if((step.machineIds || []).includes(machine.id)) items.push({order, code, step});
+        });
+      });
+      items.sort((a,b) => sortFn(a.order, b.order));
+      return {machine, items};
+    });
+  }, [db.machines, db.orders, db.codes]);
+
+  const IMP = MES_IMP;
+
+  // Day label helper
+  const dayLabel = days => {
+    if(days === null) return null;
+    if(days < 0) return Math.abs(days) + 'd atrasado';
+    if(days === 0) return 'Hoje';
+    return days + 'd';
+  };
+  const dayColor = days => {
+    if(days === null) return 'var(--t4)';
+    if(days < 0) return 'var(--red)';
+    if(days <= 3) return 'var(--orange)';
+    if(days <= 7) return 'var(--yellow)';
+    return 'var(--t4)';
+  };
+
+  return (
+    <div className="app">
+
+      <header className="header">
+        <div className="logo"><div className="logo-dot"/>MES SEQUENCIAMENTO</div>
+        <div className="hstats">
+          <span><b>{db.machines.length}</b> maq.</span>
+          <span><b>{db.processes.length}</b> proc.</span>
+          <span><b>{db.codes.length}</b> cod.</span>
+          <span><b>{db.orders.length}</b> OP</span>
+        </div>
+      </header>
+
+      <nav className="nav">
+        <button className={'nav-btn' + (tab==='seq' ? ' active' : '')} onClick={()=>setTab('seq')}>
+          Sequenciamento {db.orders.length > 0 && <span className="nbadge">{db.orders.length}</span>}
+        </button>
+        <button className={'nav-btn' + (tab==='orders' ? ' active' : '')} onClick={()=>setTab('orders')}>Ordens</button>
+        <button className="nav-btn" onClick={()=>setModal('machines')}>Maquinas <span className="nbadge">{db.machines.length}</span></button>
+        <button className="nav-btn" onClick={()=>setModal('processes')}>Processos <span className="nbadge">{db.processes.length}</span></button>
+        <button className="nav-btn" onClick={()=>{ setCf(emptyCode()); setModal('codes'); }}>Codigos <span className="nbadge">{db.codes.length}</span></button>
+        <button className="nav-btn nav-btn-rep" onClick={()=>mesOpenReport(db)}>Relatorio PDF</button>
+      </nav>
+
+      <main className="content">
+
+        {tab === 'seq' && (
+          <div>
+            <div className="sec-header">
+              <div>
+                <div className="sec-title">Fila de Sequenciamento</div>
+                <div className="sec-sub">Ordenado: criticidade e data de entrega</div>
+              </div>
+              <div style={{display:'flex', alignItems:'center', gap:'.75rem', flexWrap:'wrap'}}>
+                <div className="vtoggle">
+                  <button className={'vt-btn' + (seqView==='geral' ? ' active' : '')} onClick={()=>setSeqView('geral')}>Lista Geral</button>
+                  <button className={'vt-btn' + (seqView==='maquina' ? ' active' : '')} onClick={()=>setSeqView('maquina')}>Por Maquina</button>
+                </div>
+                <button className="btn btn-primary" onClick={()=>{ setOf2(emptyOrder()); setModal('addOrder'); }}>+ Nova Ordem</button>
+              </div>
+            </div>
+
+            {seqView === 'geral' && (sorted.length === 0
+              ? <div className="tbl-wrap"><div className="empty-state"><div className="empty-text">Nenhuma ordem na fila</div><div className="empty-hint">Maquinas -&gt; processos -&gt; codigos -&gt; nova ordem</div></div></div>
+              : <div style={{display:'flex', flexDirection:'column', gap:'.65rem'}}>
+                  {sorted.map((order, idx) => {
+                    const code  = getCode(order.codeId);
+                    const imp   = IMP[order.importance] || IMP[3];
+                    const days  = mesDaysUntil(order.deliveryDate);
+                    const steps = code ? [...(code.steps||[])].sort((a,b)=>a.sequence-b.sequence) : [];
+                    return (
+                      <div key={order.id} className="order-card" style={{borderLeftColor:imp.color}}>
+                        <div className="orank" style={{background:imp.bg, color:imp.color}}>{idx+1}</div>
+                        <div>
+                          <div className="ocode">{code ? code.code : '—'}</div>
+                          <div className="ometa">{code && code.description}{order.quantity ? ' · Qtd: '+order.quantity : ''}</div>
+                          {steps.length > 0 && (
+                            <div className="osteps">
+                              {steps.map((step, si) => {
+                                const proc = getProc(step.processId);
+                                const macs = (step.machineIds||[]).map(id => { const m=getMac(id); return m?m.name:''; }).filter(Boolean);
+                                return (
+                                  <React.Fragment key={step.id}>
+                                    {si > 0 && <span className="oarrow">{'>'}</span>}
+                                    <span className="ostep">
+                                      <span style={{color:'var(--amber)'}}>{step.sequence}.</span>
+                                      {proc ? proc.name : '—'}
+                                      {macs.length > 0 && <span style={{color:'var(--t5)'}}>{'['+macs.join('/')+']'}</span>}
+                                      {step.execTime && <span style={{color:'var(--t5)'}}>{step.execTime}min</span>}
+                                    </span>
+                                  </React.Fragment>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <div className="otags">
+                            <span className={'chip ' + imp.cls}>{imp.label}</span>
+                            {code && code.tool && <span className="chip chip-blue">{code.tool}</span>}
+                            {code && code.hasProgram && <span className="chip chip-green">Prog: {code.programName||'Sim'}</span>}
+                            {code && code.setupTime && <span className="chip chip-gray">Setup {code.setupTime}min</span>}
+                          </div>
+                        </div>
+                        <div className="due-section">
+                          <div className="due-label">Entrega</div>
+                          <div className="due-val">{mesFmtDate(order.deliveryDate)}</div>
+                          {days !== null && <div className="due-days" style={{color:dayColor(days)}}>{dayLabel(days)}</div>}
+                          <div className="due-acts">
+                            <button className="btn btn-danger" onClick={()=>upd('orders', o=>o.filter(x=>x.id!==order.id))}>&#x2715;</button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+            )}
+
+            {seqView === 'maquina' && (db.machines.length === 0
+              ? <div className="tbl-wrap"><div className="empty-state"><div className="empty-text">Nenhuma maquina cadastrada</div></div></div>
+              : <div className="maq-board">
+                  {machineQueues.map(({machine, items}) => (
+                    <div key={machine.id} className="maq-col">
+                      <div className="maq-head">
+                        <span className="maq-name">{machine.name}</span>
+                        <span className="maq-cnt">{items.length} na fila</span>
+                      </div>
+                      {items.length === 0
+                        ? <div className="maq-empty">Sem ordens atribuidas</div>
+                        : <div className="maq-list">
+                            {items.map(({order,code,step}, idx) => {
+                              const imp  = IMP[order.importance] || IMP[3];
+                              const proc = getProc(step.processId);
+                              const days = mesDaysUntil(order.deliveryDate);
+                              return (
+                                <div key={order.id+step.id} className="maq-item" style={{borderLeftColor:imp.color}}>
+                                  <div className="maq-pos-row">
+                                    <span className="maq-pos">#{idx+1}</span>
+                                    <span className={'chip ' + imp.cls} style={{fontSize:'.62rem', padding:'.1rem .45rem'}}>{imp.label}</span>
+                                  </div>
+                                  <div className="maq-code">{code.code}</div>
+                                  <div className="maq-step">Etapa {step.sequence} — {proc ? proc.name : '—'}</div>
+                                  {(code.description || order.quantity || code.setupTime) && (
+                                    <div className="maq-meta">
+                                      {[code.description, order.quantity&&('Qtd: '+order.quantity), code.setupTime&&('Setup: '+code.setupTime+'min')].filter(Boolean).join(' · ')}
+                                    </div>
+                                  )}
+                                  <div className="maq-footer">
+                                    <div>
+                                      {code.tool && <span className="chip chip-blue" style={{fontSize:'.62rem', padding:'.1rem .4rem', marginRight:'.3rem'}}>{code.tool}</span>}
+                                      {code.hasProgram && <span className="chip chip-green" style={{fontSize:'.62rem', padding:'.1rem .4rem'}}>Prog.</span>}
+                                    </div>
+                                    <div style={{textAlign:'right'}}>
+                                      <div className="maq-date">{mesFmtDate(order.deliveryDate)}</div>
+                                      {days !== null && <div className="maq-days" style={{color:dayColor(days)}}>{dayLabel(days)}</div>}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                      }
+                    </div>
+                  ))}
+                </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'orders' && (
+          <div>
+            <div className="sec-header">
+              <div><div className="sec-title">Ordens de Producao</div><div className="sec-sub">Todas as ordens registradas</div></div>
+              <button className="btn btn-primary" onClick={()=>{ setOf2(emptyOrder()); setModal('addOrder'); }}>+ Nova Ordem</button>
+            </div>
+            <div className="tbl-wrap">
+              {db.orders.length === 0
+                ? <div className="empty-state"><div className="empty-text">Nenhuma ordem cadastrada</div></div>
+                : <table>
+                    <thead><tr><th>Codigo</th><th>Descricao</th><th>Qtd</th><th>Entrega</th><th>Importancia</th><th>Obs</th><th></th></tr></thead>
+                    <tbody>
+                      {db.orders.map(order => {
+                        const code = getCode(order.codeId);
+                        const imp  = IMP[order.importance] || IMP[3];
+                        return (
+                          <tr key={order.id}>
+                            <td><span className="mono" style={{color:'var(--amber)', fontWeight:600}}>{code ? code.code : '—'}</span></td>
+                            <td style={{color:'var(--t3)'}}>{code && code.description ? code.description : '—'}</td>
+                            <td className="mono">{order.quantity||'—'}</td>
+                            <td className="mono">{mesFmtDate(order.deliveryDate)}</td>
+                            <td><span className={'chip ' + imp.cls}>{imp.label}</span></td>
+                            <td style={{color:'var(--t4)', fontSize:'.78rem'}}>{order.notes||'—'}</td>
+                            <td><button className="btn btn-danger" onClick={()=>upd('orders', o=>o.filter(x=>x.id!==order.id))}>Excluir</button></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+              }
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {modal === 'machines' && (
+        <Modal title="Maquinas" onClose={()=>setModal(null)}>
+          <div className="fsec">Cadastrar Maquina</div>
+          <div className="fgrid">
+            <div className="field"><label>Nome</label><input placeholder="ex: Torno CNC 1" value={mf.name} onChange={e=>setMf(f=>({...f,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&addMachine()} /></div>
+            <div className="field"><label>Descricao</label><input placeholder="Opcional" value={mf.description} onChange={e=>setMf(f=>({...f,description:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&addMachine()} /></div>
+          </div>
+          <button className="btn btn-primary" style={{marginTop:'.7rem'}} onClick={addMachine}>+ Adicionar</button>
+          <hr className="form-divider"/>
+          <div className="fsec">Cadastradas ({db.machines.length})</div>
+          <div className="tbl-wrap">
+            {db.machines.length === 0
+              ? <div className="empty-state"><div className="empty-text">Nenhuma maquina</div></div>
+              : <table><thead><tr><th>Nome</th><th>Descricao</th><th></th></tr></thead><tbody>
+                  {db.machines.map(m => (
+                    <tr key={m.id}>
+                      <td style={{fontWeight:600, color:'var(--t1)'}}>{m.name}</td>
+                      <td style={{color:'var(--t4)'}}>{m.description||'—'}</td>
+                      <td><button className="btn btn-danger" onClick={()=>upd('machines', ms=>ms.filter(x=>x.id!==m.id))}>&#x2715;</button></td>
+                    </tr>
+                  ))}
+                </tbody></table>
+            }
+          </div>
+        </Modal>
+      )}
+
+      {modal === 'processes' && (
+        <Modal title="Processos" onClose={()=>setModal(null)}>
+          <div className="fsec">Cadastrar Processo</div>
+          <div className="fgrid">
+            <div className="field"><label>Nome</label><input placeholder="ex: Torneamento" value={pf.name} onChange={e=>setPf(f=>({...f,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&addProcess()} /></div>
+            <div className="field"><label>Descricao</label><input placeholder="Opcional" value={pf.description} onChange={e=>setPf(f=>({...f,description:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&addProcess()} /></div>
+          </div>
+          <button className="btn btn-primary" style={{marginTop:'.7rem'}} onClick={addProcess}>+ Adicionar</button>
+          <hr className="form-divider"/>
+          <div className="fsec">Cadastrados ({db.processes.length})</div>
+          <div className="tbl-wrap">
+            {db.processes.length === 0
+              ? <div className="empty-state"><div className="empty-text">Nenhum processo</div></div>
+              : <table><thead><tr><th>Nome</th><th>Descricao</th><th></th></tr></thead><tbody>
+                  {db.processes.map(p => (
+                    <tr key={p.id}>
+                      <td style={{fontWeight:600, color:'var(--t1)'}}>{p.name}</td>
+                      <td style={{color:'var(--t4)'}}>{p.description||'—'}</td>
+                      <td><button className="btn btn-danger" onClick={()=>upd('processes', ps=>ps.filter(x=>x.id!==p.id))}>&#x2715;</button></td>
+                    </tr>
+                  ))}
+                </tbody></table>
+            }
+          </div>
+        </Modal>
+      )}
+
+      {modal === 'codes' && (
+        <Modal title="Codigos" wide onClose={()=>setModal(null)}
+          actions={<button className="btn btn-primary" style={{padding:'.3rem .9rem', fontSize:'.78rem'}} onClick={()=>{ setCf(emptyCode()); setModal('addCode'); }}>+ Novo</button>}>
+          {db.codes.length === 0
+            ? <div className="empty-state">
+                <div className="empty-text">Nenhum codigo cadastrado</div>
+                <div style={{marginTop:'1rem'}}><button className="btn btn-primary" onClick={()=>{ setCf(emptyCode()); setModal('addCode'); }}>Cadastrar Codigo</button></div>
+              </div>
+            : <div className="tbl-wrap">
+                <table>
+                  <thead><tr><th>Codigo</th><th>Descricao</th><th>Setup</th><th>Ferramenta</th><th>Programa</th><th>Etapas</th><th></th></tr></thead>
+                  <tbody>
+                    {db.codes.map(c => (
+                      <tr key={c.id}>
+                        <td><span className="mono" style={{color:'var(--amber)', fontWeight:600}}>{c.code}</span></td>
+                        <td style={{color:'var(--t3)'}}>{c.description||'—'}</td>
+                        <td className="mono" style={{color:'var(--t3)'}}>{c.setupTime ? c.setupTime+'min' : '—'}</td>
+                        <td style={{color:'var(--t3)'}}>{c.tool||'—'}</td>
+                        <td>{c.hasProgram ? <span className="chip chip-green">{c.programName||'Sim'}</span> : <span className="chip chip-gray">Nao</span>}</td>
+                        <td>{c.steps&&c.steps.length>0 ? <span className="chip chip-amber">{c.steps.length} etapas</span> : <span className="chip chip-gray">—</span>}</td>
+                        <td><button className="btn btn-danger" onClick={()=>upd('codes', cs=>cs.filter(x=>x.id!==c.id))}>&#x2715;</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+          }
+        </Modal>
+      )}
+
+      {modal === 'addCode' && (
+        <Modal title="Novo Codigo" wide onClose={()=>setModal('codes')}>
+          <div className="fsec">Identificacao</div>
+          <div className="fgrid">
+            <div className="field"><label>Codigo</label><input placeholder="ex: PEC-001" value={cf.code} onChange={e=>setCf(f=>({...f,code:e.target.value}))} /></div>
+            <div className="field"><label>Descricao</label><input placeholder="Opcional" value={cf.description} onChange={e=>setCf(f=>({...f,description:e.target.value}))} /></div>
+          </div>
+          <hr className="form-divider"/>
+          <div className="fsec">Configuracao de Producao</div>
+          <div className="fgrid">
+            <div className="field"><label>Tempo de Setup (min)</label><input type="number" min="0" placeholder="Opcional" value={cf.setupTime} onChange={e=>setCf(f=>({...f,setupTime:e.target.value}))} /></div>
+            <div className="field"><label>Ferramenta</label><input placeholder="ex: Broca 12mm" value={cf.tool} onChange={e=>setCf(f=>({...f,tool:e.target.value}))} /></div>
+          </div>
+          <div className="trow" style={{marginTop:'.6rem'}}>
+            <button className={'toggle' + (cf.hasProgram ? ' on' : '')} onClick={()=>setCf(f=>({...f,hasProgram:!f.hasProgram}))}/>
+            <span className="tlabel">Tem programa CNC / CAM</span>
+          </div>
+          {cf.hasProgram && (
+            <div className="field" style={{marginTop:'.6rem'}}>
+              <label>Nome / Numero do Programa</label>
+              <input placeholder="Opcional" value={cf.programName} onChange={e=>setCf(f=>({...f,programName:e.target.value}))} />
+            </div>
+          )}
+          <hr className="form-divider"/>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'.85rem'}}>
+            <div className="fsec" style={{margin:0}}>Sequencia de Processos</div>
+            <button className="btn btn-secondary" style={{padding:'.3rem .9rem', fontSize:'.78rem'}} onClick={addStep}>+ Etapa</button>
+          </div>
+          {db.processes.length === 0 && <div className="alert">Nenhum processo cadastrado. Cadastre processos primeiro para montar a sequencia.</div>}
+          {cf.steps.length === 0
+            ? <div style={{background:'var(--bg2)',border:'1px dashed var(--border2)',borderRadius:8,padding:'1.5rem',textAlign:'center',color:'var(--t5)',fontSize:'.8rem',marginBottom:'.75rem'}}>Clique em "+ Etapa" para adicionar processos a sequencia</div>
+            : cf.steps.map(step => (
+                <div key={step.id} className="step-card">
+                  <div className="step-num">Etapa {step.sequence}</div>
+                  <div style={{paddingTop:'.5rem'}}>
+                    <div className="fgrid">
+                      <div className="field">
+                        <label>Processo</label>
+                        <select value={step.processId} onChange={e=>updStep(step.id,'processId',e.target.value)}>
+                          <option value="">Selecione...</option>
+                          {db.processes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Tempo de Execucao (min)</label>
+                        <input type="number" min="0" placeholder="Opcional" value={step.execTime} onChange={e=>updStep(step.id,'execTime',e.target.value)} />
+                      </div>
+                      <div className="field f-full">
+                        <label>Maquinas que executam esta etapa</label>
+                        {db.machines.length === 0
+                          ? <div style={{fontSize:'.75rem',color:'var(--t5)'}}>Nenhuma maquina cadastrada</div>
+                          : <div className="check-group">
+                              {db.machines.map(m => (
+                                <label key={m.id} className={'check-item' + (step.machineIds.includes(m.id) ? ' checked' : '')} onClick={()=>toggleMac(step.id, m.id)}>
+                                  <input type="checkbox" checked={step.machineIds.includes(m.id)} onChange={()=>{}} />
+                                  {m.name}
+                                </label>
+                              ))}
+                            </div>
+                        }
+                      </div>
+                    </div>
+                    <div style={{marginTop:'.7rem', textAlign:'right'}}>
+                      <button className="btn btn-danger" onClick={()=>delStep(step.id)}>Remover Etapa</button>
+                    </div>
+                  </div>
+                </div>
+              ))
+          }
+          <div style={{display:'flex',gap:'.65rem',justifyContent:'flex-end',marginTop:'1.25rem',paddingTop:'1rem',borderTop:'1px solid var(--border)'}}>
+            <button className="btn btn-secondary" onClick={()=>setModal('codes')}>Cancelar</button>
+            <button className="btn btn-primary" onClick={saveCode} disabled={!cf.code.trim()}>Salvar Codigo</button>
+          </div>
+        </Modal>
+      )}
+
+      {modal === 'addOrder' && (
+        <Modal title="Nova Ordem de Producao" wide onClose={()=>setModal(null)}>
+          {db.codes.length === 0 && <div className="alert">Nenhum codigo cadastrado. Cadastre um codigo antes de criar uma ordem.</div>}
+          <div className="fsec">Codigo da Peca</div>
+          <div className="fgrid">
+            <div className="field">
+              <label>Codigo</label>
+              <select value={of2.codeId} onChange={e=>setOf2(f=>({...f,codeId:e.target.value}))}>
+                <option value="">Selecione o codigo...</option>
+                {db.codes.map(c => <option key={c.id} value={c.id}>{c.code}{c.description ? ' — '+c.description : ''}</option>)}
+              </select>
+            </div>
+            <div className="field"><label>Quantidade</label><input type="number" min="1" placeholder="Opcional" value={of2.quantity} onChange={e=>setOf2(f=>({...f,quantity:e.target.value}))} /></div>
+          </div>
+          {selCode && (
+            <div className="info-block">
+              <div className="ibtitle">Dados do Codigo — {selCode.code}</div>
+              <div className="irow"><span className="ikey">Descricao</span><span className="ival">{selCode.description||'—'}</span></div>
+              <div className="irow"><span className="ikey">Setup</span><span className="ival">{selCode.setupTime ? selCode.setupTime+' min' : '—'}</span></div>
+              <div className="irow"><span className="ikey">Ferramenta</span><span className="ival">{selCode.tool||'—'}</span></div>
+              <div className="irow"><span className="ikey">Programa</span><span className="ival">{selCode.hasProgram ? (selCode.programName||'Sim') : 'Nao'}</span></div>
+              {selCode.steps && selCode.steps.length > 0 && (
+                <div style={{borderTop:'1px solid rgba(245,158,11,.12)', marginTop:'.4rem', paddingTop:'.4rem'}}>
+                  {[...selCode.steps].sort((a,b)=>a.sequence-b.sequence).map(step => {
+                    const proc = getProc(step.processId);
+                    const macs = (step.machineIds||[]).map(id => { const m=getMac(id); return m?m.name:''; }).filter(Boolean);
+                    return (
+                      <div key={step.id} className="irow" style={{paddingLeft:'.5rem'}}>
+                        <span style={{color:'var(--amber)', fontFamily:'IBM Plex Mono', fontSize:'.72rem'}}>{step.sequence}. {proc ? proc.name : '—'}</span>
+                        <span className="ival" style={{fontSize:'.68rem'}}>{[step.execTime&&step.execTime+'min', macs.length&&('['+macs.join(', ')+']')].filter(Boolean).join(' ')||'—'}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          <hr className="form-divider"/>
+          <div className="fsec">Prioridade e Prazo</div>
+          <div className="fgrid">
+            <div className="field"><label>Data de Entrega</label><input type="date" value={of2.deliveryDate} onChange={e=>setOf2(f=>({...f,deliveryDate:e.target.value}))} /></div>
+            <div className="field">
+              <label>Grau de Importancia</label>
+              <select value={of2.importance} onChange={e=>setOf2(f=>({...f,importance:e.target.value}))}>
+                <option value="1">Critico — Parar linha</option>
+                <option value="2">Alto — Urgente</option>
+                <option value="3">Medio — Normal</option>
+                <option value="4">Baixo — Sem urgencia</option>
+              </select>
+            </div>
+            <div className="field f-full"><label>Observacoes</label><textarea placeholder="Opcional" value={of2.notes} onChange={e=>setOf2(f=>({...f,notes:e.target.value}))} /></div>
+          </div>
+          <div style={{display:'flex',gap:'.65rem',justifyContent:'flex-end',marginTop:'1.25rem',paddingTop:'1rem',borderTop:'1px solid var(--border)'}}>
+            <button className="btn btn-secondary" onClick={()=>setModal(null)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={saveOrder} disabled={!of2.codeId}>Registrar Ordem</button>
+          </div>
+        </Modal>
+      )}
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
